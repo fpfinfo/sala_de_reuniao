@@ -1,8 +1,10 @@
 import { Room } from '../types';
 import { ApiClient } from './api';
 
+const ROOMS_STORAGE_KEY = 'seplan_salas_rooms_config';
+
 // As 3 salas fixas da SEPLAN com as capacidades oficiais atualizadas
-export const SEPLAN_ROOMS: Room[] = [
+export const DEFAULT_SEPLAN_ROOMS: Room[] = [
   {
     id: 'room-seplan-01',
     name: 'Sala de Reunião 1 (CODAR)',
@@ -39,11 +41,53 @@ export const roomsService = {
   async getRooms(): Promise<Room[]> {
     try {
       const rooms = await ApiClient.request<Room[]>('/rooms');
-      return rooms && rooms.length > 0 ? rooms : SEPLAN_ROOMS;
+      return rooms && rooms.length > 0 ? rooms : this.getLocalRooms();
     } catch (error) {
-      // Fallback para salas oficiais pré-configuradas da SEPLAN
-      return SEPLAN_ROOMS;
+      return this.getLocalRooms();
     }
+  },
+
+  getLocalRooms(): Room[] {
+    const raw = localStorage.getItem(ROOMS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(DEFAULT_SEPLAN_ROOMS));
+      return DEFAULT_SEPLAN_ROOMS;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return DEFAULT_SEPLAN_ROOMS;
+    }
+  },
+
+  saveLocalRooms(rooms: Room[]): void {
+    localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(rooms));
+  },
+
+  /**
+   * Atualiza as configurações de uma sala (Exclusivo Master Admin)
+   */
+  async updateRoom(roomId: string, updatedData: Partial<Room>): Promise<Room> {
+    const rooms = this.getLocalRooms();
+    const index = rooms.findIndex((r) => r.id === roomId);
+    if (index === -1) {
+      throw new Error('Sala não encontrada.');
+    }
+
+    const updatedRoom = { ...rooms[index], ...updatedData };
+    rooms[index] = updatedRoom;
+    this.saveLocalRooms(rooms);
+
+    try {
+      await ApiClient.request(`/rooms/${roomId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatedData),
+      });
+    } catch (err) {
+      // Persistido localmente
+    }
+
+    return updatedRoom;
   },
 
   /**

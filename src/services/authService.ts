@@ -54,19 +54,65 @@ export const authService = {
   },
 
   /**
-   * Atualiza a lista de usuários no armazenamento
+   * Salva a lista de usuários no armazenamento
    */
   saveUsers(users: User[]): void {
     localStorage.setItem(USERS_LIST_STORAGE_KEY, JSON.stringify(users));
   },
 
   /**
-   * Promove ou altera o perfil de um usuário (Exclusivo para MASTER_ADMIN)
+   * Cadastra um novo servidor (Apenas Administradores)
+   */
+  addUser(newUser: Omit<User, 'id'>): User {
+    const currentUser = this.getCurrentUser();
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER_ADMIN';
+    if (!isAdmin) {
+      throw new Error('Apenas administradores podem cadastrar servidores.');
+    }
+
+    const users = this.getRegisteredUsers();
+    if (users.some((u) => u.email.toLowerCase() === newUser.email.toLowerCase())) {
+      throw new Error('Já existe um servidor cadastrado com este e-mail.');
+    }
+
+    const created: User = {
+      id: 'usr-' + Math.random().toString(36).substr(2, 9),
+      ...newUser,
+    };
+
+    users.push(created);
+    this.saveUsers(users);
+    return created;
+  },
+
+  /**
+   * Exclui um servidor (Apenas Administradores)
+   */
+  deleteUser(userId: string): void {
+    const currentUser = this.getCurrentUser();
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER_ADMIN';
+    if (!isAdmin) {
+      throw new Error('Apenas administradores podem remover servidores.');
+    }
+
+    const users = this.getRegisteredUsers();
+    const target = users.find((u) => u.id === userId);
+    if (target?.email === 'fabio.freitas@tjpa.jus.br') {
+      throw new Error('O Administrador Master não pode ser excluído.');
+    }
+
+    const filtered = users.filter((u) => u.id !== userId);
+    this.saveUsers(filtered);
+  },
+
+  /**
+   * Promove ou altera o perfil de um usuário (Apenas Administradores)
    */
   updateUserRole(userId: string, newRole: UserRole): void {
     const currentUser = this.getCurrentUser();
-    if (currentUser?.role !== 'MASTER_ADMIN') {
-      throw new Error('Apenas o Administrador Master pode alterar privilégios de usuários.');
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER_ADMIN';
+    if (!isAdmin) {
+      throw new Error('Apenas administradores podem alterar privilégios de usuários.');
     }
 
     const users = this.getRegisteredUsers();
@@ -94,12 +140,10 @@ export const authService = {
       localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(response.user));
       return response;
     } catch (error) {
-      // Procura usuário registrado
       const users = this.getRegisteredUsers();
       let matchedUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 
       if (!matchedUser) {
-        // Cria usuário novo
         const isMaster = email.toLowerCase().includes('fabio.freitas');
         matchedUser = {
           id: 'usr-' + Math.random().toString(36).substr(2, 9),
@@ -137,7 +181,7 @@ export const authService = {
   },
 
   /**
-   * Troca de usuário logado (atalho de desenvolvimento/demo)
+   * Troca de usuário logado (atalho de teste)
    */
   switchUser(user: User): void {
     const mockToken = 'jwt-mock-inforge-' + btoa(JSON.stringify(user));

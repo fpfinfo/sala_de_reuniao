@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User as UserIcon, Calendar, ListChecks, PlusCircle, ShieldCheck, Users, Crown, ArrowLeftRight } from 'lucide-react';
+import { LogOut, User as UserIcon, Calendar, ListChecks, PlusCircle, ShieldCheck, Settings, Crown, ArrowLeftRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { authService } from '../../services/authService';
 
 interface HeaderProps {
-  activeTab: 'timeline' | 'my-bookings' | 'pending-approvals';
-  onTabChange: (tab: 'timeline' | 'my-bookings' | 'pending-approvals') => void;
+  activeTab: 'timeline' | 'my-bookings' | 'pending-approvals' | 'settings';
+  onTabChange: (tab: 'timeline' | 'my-bookings' | 'pending-approvals' | 'settings') => void;
   onNewBookingClick: () => void;
-  onOpenUserManagement: () => void;
   pendingCount: number;
 }
 
@@ -16,7 +15,6 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   onNewBookingClick,
-  onOpenUserManagement,
   pendingCount,
 }) => {
   const { user, logout } = useAuth();
@@ -57,13 +55,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-semibold text-[11px] truncate max-w-[140px] sm:max-w-none">
                 {user?.name || user?.email}
               </span>
-              <span className={`text-[10px] font-black px-1.5 py-0.2 rounded ml-1 ${
-                isMaster
-                  ? 'bg-[#C59B27] text-white'
-                  : isAdmin
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-600 text-white'
-              }`}>
+              <span
+                className={`text-[10px] font-black px-1.5 py-0.2 rounded ml-1 ${
+                  isMaster
+                    ? 'bg-[#C59B27] text-white'
+                    : isAdmin
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-white'
+                }`}
+              >
                 {isMaster ? 'MASTER ADMIN' : isAdmin ? 'ADMIN' : 'USUÁRIO'}
               </span>
               <ArrowLeftRight className="w-3 h-3 text-slate-400 ml-1" />
@@ -133,18 +133,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Ações */}
         <div className="flex items-center gap-3">
-          {isMaster && (
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={onOpenUserManagement}
-              leftIcon={<Users className="w-4 h-4 text-[#002B5C]" />}
-              className="text-xs font-bold border-slate-300"
-            >
-              Gestão de Usuários
-            </Button>
-          )}
-
           <Button
             variant="gold"
             size="md"
@@ -197,18 +185,33 @@ export const Header: React.FC<HeaderProps> = ({
               <ShieldCheck className="w-4 h-4 text-amber-600" />
               <span>Aprovações Pendentes</span>
               {pendingCount > 0 && (
-                <span className="bg-tjpa-red text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                <span className="bg-tjpa-red text-white text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
                   {pendingCount}
                 </span>
               )}
             </button>
           )}
+
+          {/* Aba de Gestão de Usuários e Configurações (Apenas Administradores) */}
+          {isAdmin && (
+            <button
+              onClick={() => onTabChange('settings')}
+              className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all ${
+                activeTab === 'settings'
+                  ? 'border-[#002B5C] text-[#002B5C] bg-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+              }`}
+            >
+              <Settings className="w-4 h-4 text-[#C59B27]" />
+              <span>Gestão de Usuários & Salas</span>
+            </button>
+          )}
         </nav>
 
         <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-slate-500 pr-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#002B5C]"></span> Sala 1 (CODAR - 10 lug.)
-          <span className="w-2.5 h-2.5 rounded-full bg-[#059669] ml-2"></span> Sala 2 (SEPLAN - 15 lug.)
-          <span className="w-2.5 h-2.5 rounded-full bg-[#C59B27] ml-2"></span> Sala 3 (COFIN - 15 lug.)
+          <span className="w-2.5 h-2.5 rounded-full bg-[#002B5C]"></span> Sala 1 (CODAR)
+          <span className="w-2.5 h-2.5 rounded-full bg-[#059669] ml-2"></span> Sala 2 (SEPLAN)
+          <span className="w-2.5 h-2.5 rounded-full bg-[#C59B27] ml-2"></span> Sala 3 (COFIN)
         </div>
       </div>
     </header>

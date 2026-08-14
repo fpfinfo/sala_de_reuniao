@@ -11,7 +11,7 @@ import { RoomFilterBar } from './components/dashboard/RoomFilterBar';
 import { DailyTimelineGrid } from './components/dashboard/DailyTimelineGrid';
 import { MyBookingsList } from './components/bookings/MyBookingsList';
 import { PendingApprovalsList } from './components/admin/PendingApprovalsList';
-import { UserManagementModal } from './components/admin/UserManagementModal';
+import { AdminSettingsPage } from './components/admin/AdminSettingsPage';
 import { BookingModal } from './components/bookings/BookingModal';
 import { CancelConfirmModal } from './components/bookings/CancelConfirmModal';
 import { LoginForm } from './components/auth/LoginForm';
@@ -21,7 +21,7 @@ export const AppContent: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { addToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'timeline' | 'my-bookings' | 'pending-approvals'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'my-bookings' | 'pending-approvals' | 'settings'>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [selectedRoomId, setSelectedRoomId] = useState<string | 'ALL'>('ALL');
 
@@ -40,18 +40,20 @@ export const AppContent: React.FC = () => {
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
-  const [isUserManagementOpen, setIsUserManagementOpen] = useState<boolean>(false);
-
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
+  const isMaster = user?.role === 'MASTER_ADMIN' || user?.email === 'fabio.freitas@tjpa.jus.br';
+  const isAdmin = isMaster || user?.role === 'ADMIN';
 
   // Carrega salas da SEPLAN
-  useEffect(() => {
+  const loadRooms = useCallback(async () => {
     if (isAuthenticated) {
-      roomsService.getRooms().then((data) => {
-        setRooms(data);
-      });
+      const data = await roomsService.getRooms();
+      setRooms(data);
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
 
   // Carrega agendamentos
   const loadBookings = useCallback(async () => {
@@ -182,7 +184,6 @@ export const AppContent: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onNewBookingClick={handleOpenNewBooking}
-        onOpenUserManagement={() => setIsUserManagementOpen(true)}
         pendingCount={pendingBookings.length}
       />
 
@@ -233,6 +234,11 @@ export const AppContent: React.FC = () => {
             onReject={handleRejectBooking}
             onNewBookingClick={handleOpenNewBooking}
           />
+        ) : activeTab === 'settings' && isAdmin ? (
+          <AdminSettingsPage
+            rooms={rooms}
+            onRoomsUpdated={loadRooms}
+          />
         ) : (
           <MyBookingsList
             bookings={myBookings}
@@ -265,12 +271,6 @@ export const AppContent: React.FC = () => {
         room={rooms.find((r) => r.id === bookingToCancel?.room_id)}
         onConfirm={handleConfirmCancel}
         isLoading={isCancelling}
-      />
-
-      {/* Modal de Gestão de Usuários (Master Admin) */}
-      <UserManagementModal
-        isOpen={isUserManagementOpen}
-        onClose={() => setIsUserManagementOpen(false)}
       />
 
       <ToastContainer />
