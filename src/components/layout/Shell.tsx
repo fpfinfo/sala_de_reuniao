@@ -17,7 +17,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
           Tribunal de Justiça do Estado do Pará — Secretaria de Planejamento, Coordenação e Finanças (SEPLAN)
         </p>
         <p className="text-[11px] text-slate-400 mt-1">
-          Sistema Integrado de Gestão e Agendamento de Salas de Reuniões • Conexão Inforge
+          Sistema Integrado de Gestão e Agendamento de Salas de Reuniões
         </p>
       </footer>
     </div>
