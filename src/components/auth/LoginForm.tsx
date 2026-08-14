@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Lock, Mail, ShieldCheck, Crown, User as UserIcon, Building2, UserPlus, LogIn } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, User as UserIcon, Building2, UserPlus, LogIn } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
@@ -96,11 +96,6 @@ export const LoginForm: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = (quickEmail: string) => {
-    setEmail(quickEmail);
-    login(quickEmail, '123456');
-  };
-
   return (
     <div className="min-h-screen bg-[#002B5C] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       {/* Elementos Decorativos de Fundo */}
@@ -182,39 +177,7 @@ export const LoginForm: React.FC = () => {
               Acessar Sistema
             </Button>
 
-            {/* Acesso Rápido para Demonstração dos Perfis */}
-            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-              <span className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-wide">
-                Acesso Rápido para Testes:
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('fabio.freitas@tjpa.jus.br')}
-                  className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left transition-colors flex items-center gap-2"
-                >
-                  <Crown className="w-4 h-4 text-[#C59B27] flex-shrink-0" />
-                  <div className="flex flex-col truncate">
-                    <span className="text-[11px] font-bold text-amber-950 truncate">Fabio Freitas</span>
-                    <span className="text-[9px] text-amber-700 font-semibold">Master Admin</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('servidor.financas@tjpa.jus.br')}
-                  className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors flex items-center gap-2"
-                >
-                  <UserIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                  <div className="flex flex-col truncate">
-                    <span className="text-[11px] font-bold text-slate-800 truncate">Servidor Padrão</span>
-                    <span className="text-[9px] text-slate-500 font-semibold">Usuário (Pendente)</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-3 border-t border-slate-100">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Autenticação segura — SEPLAN / TJPA</span>
             </div>
