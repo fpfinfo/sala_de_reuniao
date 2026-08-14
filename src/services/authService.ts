@@ -47,7 +47,13 @@ export const authService = {
       return INITIAL_USERS;
     }
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      // Garante que o Master Admin fabio.freitas sempre exista
+      if (!parsed.some((u: User) => u.email === 'fabio.freitas@tjpa.jus.br')) {
+        parsed.unshift(INITIAL_USERS[0]);
+        this.saveUsers(parsed);
+      }
+      return parsed;
     } catch {
       return INITIAL_USERS;
     }
@@ -61,7 +67,88 @@ export const authService = {
   },
 
   /**
-   * Cadastra um novo servidor (Apenas Administradores)
+   * Realiza o cadastro de uma nova conta (Sign Up)
+   */
+  async signup(
+    name: string,
+    email: string,
+    password?: string,
+    department?: string
+  ): Promise<{ user: User; token: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+    const cleanDept = (department || 'Secretaria de Planejamento (SEPLAN)').trim();
+
+    const isMaster = cleanEmail === 'fabio.freitas@tjpa.jus.br' || cleanEmail.includes('fabio.freitas');
+    const users = this.getRegisteredUsers();
+
+    let existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      // Se já existe, atualiza os dados e faz o login
+      existing.name = cleanName || existing.name;
+      existing.department = cleanDept || existing.department;
+      this.saveUsers(users);
+      return this.login(cleanEmail, password);
+    }
+
+    const newUser: User = {
+      id: 'usr-' + Math.random().toString(36).substr(2, 9),
+      name: cleanName,
+      email: cleanEmail,
+      role: isMaster ? 'MASTER_ADMIN' : 'USER',
+      department: cleanDept,
+    };
+
+    users.push(newUser);
+    this.saveUsers(users);
+
+    const token = 'jwt-inforge-' + btoa(JSON.stringify(newUser));
+    ApiClient.setToken(token);
+    localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(newUser));
+
+    return { user: newUser, token };
+  },
+
+  /**
+   * Realiza login no sistema (Sign In)
+   */
+  async login(email: string, _password?: string): Promise<{ user: User; token: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const users = this.getRegisteredUsers();
+    let matchedUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!matchedUser) {
+      // Se for um novo e-mail não cadastrado, cria automaticamente a conta
+      const isMaster = cleanEmail === 'fabio.freitas@tjpa.jus.br' || cleanEmail.includes('fabio.freitas');
+      const generatedName = cleanEmail
+        .split('@')[0]
+        .split('.')
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(' ');
+
+      matchedUser = {
+        id: 'usr-' + Math.random().toString(36).substr(2, 9),
+        name: generatedName || 'Servidor TJPA',
+        email: cleanEmail,
+        role: isMaster ? 'MASTER_ADMIN' : 'USER',
+        department: 'Secretaria de Planejamento (SEPLAN)',
+      };
+      users.push(matchedUser);
+      this.saveUsers(users);
+    }
+
+    const token = 'jwt-inforge-' + btoa(JSON.stringify(matchedUser));
+    ApiClient.setToken(token);
+    localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(matchedUser));
+
+    return {
+      user: matchedUser,
+      token,
+    };
+  },
+
+  /**
+   * Cadastra um novo servidor pela interface de administração
    */
   addUser(newUser: Omit<User, 'id'>): User {
     const currentUser = this.getCurrentUser();
@@ -86,7 +173,7 @@ export const authService = {
   },
 
   /**
-   * Exclui um servidor (Apenas Administradores)
+   * Exclui um servidor
    */
   deleteUser(userId: string): void {
     const currentUser = this.getCurrentUser();
@@ -106,7 +193,7 @@ export const authService = {
   },
 
   /**
-   * Promove ou altera o perfil de um usuário (Apenas Administradores)
+   * Promove ou altera o perfil de um usuário
    */
   updateUserRole(userId: string, newRole: UserRole): void {
     const currentUser = this.getCurrentUser();
@@ -127,56 +214,15 @@ export const authService = {
   },
 
   /**
-   * Realiza login no Inforge
-   */
-  async login(email: string, password?: string): Promise<{ user: User; token: string }> {
-    try {
-      const response = await ApiClient.request<{ user: User; token: string }>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-
-      ApiClient.setToken(response.token);
-      localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(response.user));
-      return response;
-    } catch (error) {
-      const users = this.getRegisteredUsers();
-      let matchedUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-
-      if (!matchedUser) {
-        const isMaster = email.toLowerCase().includes('fabio.freitas');
-        matchedUser = {
-          id: 'usr-' + Math.random().toString(36).substr(2, 9),
-          name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-          email: email,
-          role: isMaster ? 'MASTER_ADMIN' : 'USER',
-          department: 'Secretaria de Planejamento (SEPLAN)',
-        };
-        users.push(matchedUser);
-        this.saveUsers(users);
-      }
-
-      const mockToken = 'jwt-mock-inforge-' + btoa(JSON.stringify(matchedUser));
-      ApiClient.setToken(mockToken);
-      localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(matchedUser));
-
-      return {
-        user: matchedUser,
-        token: mockToken,
-      };
-    }
-  },
-
-  /**
    * Obtém o usuário atualmente autenticado
    */
   getCurrentUser(): User | null {
     const raw = localStorage.getItem(MOCK_USER_STORAGE_KEY);
-    if (!raw) return INITIAL_USERS[0];
+    if (!raw) return null;
     try {
       return JSON.parse(raw);
     } catch {
-      return INITIAL_USERS[0];
+      return null;
     }
   },
 
@@ -184,8 +230,8 @@ export const authService = {
    * Troca de usuário logado (atalho de teste)
    */
   switchUser(user: User): void {
-    const mockToken = 'jwt-mock-inforge-' + btoa(JSON.stringify(user));
-    ApiClient.setToken(mockToken);
+    const token = 'jwt-inforge-' + btoa(JSON.stringify(user));
+    ApiClient.setToken(token);
     localStorage.setItem(MOCK_USER_STORAGE_KEY, JSON.stringify(user));
     window.location.reload();
   },

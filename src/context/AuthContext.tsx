@@ -6,6 +6,7 @@ interface AuthContextData {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password?: string) => Promise<void>;
+  signup: (name: string, email: string, password?: string, department?: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -41,6 +42,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const signup = async (name: string, email: string, password?: string, department?: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authService.signup(name, email, password, department);
+      setUser(res.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -52,6 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         isAuthenticated: !!user,
         login,
+        signup,
         logout,
         isLoading,
       }}
