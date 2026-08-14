@@ -64,10 +64,10 @@ CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings (user_id);
 -- 4. SEED INICIAL DAS 3 SALAS DA SEPLAN
 -- ----------------------------------------------------------------------------
 INSERT INTO rooms (id, name, capacity, location, description, color) VALUES
-('a1111111-1111-1111-1111-111111111111', 'Sala de Reunião 1 (Executiva)', 12, 'SEPLAN - Ala A (Prédio Sede)', 'Sala executiva com mesa de 12 lugares, TV 65" 4K para videoconferências e quadro branco de vidro.', '#002B5C'),
-('a2222222-2222-2222-2222-222222222222', 'Sala de Reunião 2 (Técnica)', 8, 'SEPLAN - Ala B (Planejamento)', 'Ambiente focado em alinhamentos técnicos e revisões orçamentárias, mesa redonda para 8 pessoas.', '#059669'),
-('a3333333-3333-3333-3333-333333333333', 'Sala de Reunião 3 (Plenária / Brainstorming)', 16, 'SEPLAN - Ala Central', 'Espaço amplo com layout modular, projetor laser de alta definição e sistema de som.', '#C59B27')
-ON CONFLICT (id) DO NOTHING;
+('a1111111-1111-1111-1111-111111111111', 'Sala de Reunião 1 (CODAR)', 12, 'SEPLAN - Ala CODAR (Prédio Sede)', 'Sala de reuniões da Coordenadoria de Arrecadação (CODAR) equipada com TV 65" 4K para videoconferências e quadro branco.', '#002B5C'),
+('a2222222-2222-2222-2222-222222222222', 'Sala de Reunião 2 (SEPLAN)', 8, 'SEPLAN - Gabinete / Planejamento', 'Sala central da Secretaria de Planejamento, Coordenação e Finanças para alinhamentos estratégicos e técnicos.', '#059669'),
+('a3333333-3333-3333-3333-333333333333', 'Sala de Reunião 3 (COFIN)', 16, 'SEPLAN - Ala COFIN (Finanças)', 'Espaço da Coordenadoria Financeira (COFIN) com layout amplo, projetor de alta definição e sistema de som.', '#C59B27')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, location = EXCLUDED.location, description = EXCLUDED.description;
 
 -- ----------------------------------------------------------------------------
 -- 5. FUNCTION & TRIGGER PARA ATUALIZAÇÃO AUTOMÁTICA DE UPDATED_AT

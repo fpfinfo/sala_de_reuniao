@@ -110,9 +110,9 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-slate-500 pr-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#002B5C]"></span> Sala 1
-          <span className="w-2.5 h-2.5 rounded-full bg-[#059669] ml-2"></span> Sala 2
-          <span className="w-2.5 h-2.5 rounded-full bg-[#C59B27] ml-2"></span> Sala 3
+          <span className="w-2.5 h-2.5 rounded-full bg-[#002B5C]"></span> Sala 1 (CODAR)
+          <span className="w-2.5 h-2.5 rounded-full bg-[#059669] ml-2"></span> Sala 2 (SEPLAN)
+          <span className="w-2.5 h-2.5 rounded-full bg-[#C59B27] ml-2"></span> Sala 3 (COFIN)
         </div>
       </div>
     </header>
