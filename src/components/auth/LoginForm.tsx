@@ -12,8 +12,8 @@ export const LoginForm: React.FC = () => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   // Estado de Login
-  const [email, setEmail] = useState('fabio.freitas@tjpa.jus.br');
-  const [password, setPassword] = useState('••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   // Estado de Cadastro (Sign Up)
   const [signupName, setSignupName] = useState('');
