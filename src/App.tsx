@@ -13,6 +13,7 @@ import { MyBookingsList } from './components/bookings/MyBookingsList';
 import { PendingApprovalsList } from './components/admin/PendingApprovalsList';
 import { AdminSettingsPage } from './components/admin/AdminSettingsPage';
 import { BookingModal } from './components/bookings/BookingModal';
+import { BookingDetailsModal } from './components/bookings/BookingDetailsModal';
 import { CancelConfirmModal } from './components/bookings/CancelConfirmModal';
 import { LoginForm } from './components/auth/LoginForm';
 import { ToastContainer } from './components/ui/ToastContainer';
@@ -35,6 +36,9 @@ export const AppContent: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [bookingModalInitialRoom, setBookingModalInitialRoom] = useState<string | undefined>();
   const [bookingModalInitialStart, setBookingModalInitialStart] = useState<string | undefined>();
+
+  const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -129,6 +133,12 @@ export const AppContent: React.FC = () => {
     setIsBookingModalOpen(true);
   };
 
+  // Abrir Modal de Detalhes ao Clicar no Card
+  const handleBookingCardClick = (booking: Booking) => {
+    setSelectedBookingForDetails(booking);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleOpenCancelModal = (booking: Booking) => {
     setBookingToCancel(booking);
     setIsCancelModalOpen(true);
@@ -212,17 +222,7 @@ export const AppContent: React.FC = () => {
                 selectedRoomId={selectedRoomId}
                 selectedDate={selectedDate}
                 onQuickBooking={handleQuickBooking}
-                onBookingClick={(booking) => {
-                  const statusDesc =
-                    booking.status === 'PENDING'
-                      ? 'Pendente de Aprovação pelo Administrador'
-                      : 'Confirmado';
-                  addToast({
-                    type: booking.status === 'PENDING' ? 'warning' : 'info',
-                    title: booking.title,
-                    message: `${statusDesc} • Solicitante: ${booking.user_name}`,
-                  });
-                }}
+                onBookingClick={handleBookingCardClick}
               />
             )}
           </div>
@@ -258,6 +258,21 @@ export const AppContent: React.FC = () => {
         initialRoomId={bookingModalInitialRoom}
         initialStartTime={bookingModalInitialStart}
         onBookingSuccess={loadBookings}
+      />
+
+      {/* Modal de Detalhes Completos da Solicitação ao Clicar no Card */}
+      <BookingDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedBookingForDetails(null);
+        }}
+        booking={selectedBookingForDetails}
+        room={rooms.find((r) => r.id === selectedBookingForDetails?.room_id)}
+        currentUser={user}
+        onApprove={handleApproveBooking}
+        onReject={handleRejectBooking}
+        onCancel={handleOpenCancelModal}
       />
 
       {/* Modal de Confirmação de Cancelamento */}
