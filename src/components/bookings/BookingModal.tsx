@@ -149,8 +149,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       if (isAdmin) {
         addToast({
           type: 'success',
-          title: isPriority ? 'Reserva Prioritária Confirmada!' : 'Reserva Confirmada!',
-          message: `Agendamento cadastrado com sucesso para ${selectedRoom?.name}.`,
+          title: isPriority ? 'Reserva Prioritária Auto-confirmada!' : 'Agendamento Auto-confirmado!',
+          message: `Horário reservado com sucesso para ${selectedRoom?.name}.`,
         });
       } else {
         addToast({
@@ -184,7 +184,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Aviso de Perfil */}
-        {!isAdmin && (
+        {isAdmin ? (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <p>
+              <strong>Perfil Administrador:</strong> Seu agendamento será <strong>auto-confirmado imediatamente</strong> e o horário ficará garantido na grade oficial.
+            </p>
+          </div>
+        ) : (
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
             <Clock className="w-4 h-4 text-[#002B5C] flex-shrink-0 mt-0.5" />
             <p>
@@ -361,7 +368,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             disabled={!!conflictMessage && (!isPriority || !isPendingConflict)}
             className="bg-[#002B5C] hover:bg-[#001E42] font-bold"
           >
-            {isAdmin ? 'Confirmar Agendamento' : 'Enviar Solicitação'}
+            {isAdmin ? 'Agendar e Auto-confirmar' : 'Enviar Solicitação'}
           </Button>
         </div>
       </form>
