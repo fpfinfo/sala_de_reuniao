@@ -47,10 +47,16 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Cabeçalho Principal Institucional */}
       <div className="px-4 sm:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
-          {/* Ícone / Brasão TJPA */}
-          <div className="w-12 h-12 rounded-lg bg-[#002B5C] flex items-center justify-center text-white shadow-sm flex-shrink-0">
-            <Building2 className="w-7 h-7 text-[#C59B27]" />
-          </div>
+          {/* Brasão Oficial TJPA */}
+          <img
+            src="https://www.tjpa.jus.br/PortalExterno/hotsite/jurisprudencia/img/logo-oficial-tjpa.png"
+            alt="Brasão TJPA"
+            className="h-12 w-auto object-contain flex-shrink-0"
+            onError={(e) => {
+              // Fallback gracioso se a imagem externa falhar
+              e.currentTarget.style.display = 'none';
+            }}
+          />
           <div>
             <h1 className="text-lg sm:text-xl font-black text-[#002B5C] tracking-tight uppercase">
               Tribunal de Justiça do Estado do Pará

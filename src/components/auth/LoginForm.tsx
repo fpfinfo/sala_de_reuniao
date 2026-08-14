@@ -49,9 +49,11 @@ export const LoginForm: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10">
         {/* Cabeçalho do Card */}
         <div className="bg-[#F1F3F6] p-8 text-center border-b border-slate-200">
-          <div className="w-16 h-16 rounded-2xl bg-[#002B5C] flex items-center justify-center mx-auto mb-4 shadow-md">
-            <Building2 className="w-9 h-9 text-[#C59B27]" />
-          </div>
+          <img
+            src="https://www.tjpa.jus.br/PortalExterno/hotsite/jurisprudencia/img/logo-oficial-tjpa.png"
+            alt="Brasão TJPA"
+            className="h-16 w-auto object-contain mx-auto mb-4"
+          />
           <h2 className="text-xl font-black text-[#002B5C] tracking-tight uppercase">
             Tribunal de Justiça do Pará
           </h2>
