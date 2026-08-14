@@ -1,8 +1,10 @@
+export type UserRole = 'MASTER_ADMIN' | 'ADMIN' | 'USER';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'USER' | 'ADMIN' | 'SEPLAN_MANAGER';
+  role: UserRole;
   department?: string;
 }
 
@@ -16,6 +18,8 @@ export interface Room {
   equipment?: string[];
 }
 
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+
 export interface Booking {
   id: string;
   room_id: string;
@@ -24,9 +28,13 @@ export interface Booking {
   user_email: string;
   title: string;
   description?: string;
-  start_time: string; // ISO String (ex: 2026-08-14T09:00:00.000Z)
-  end_time: string;   // ISO String (ex: 2026-08-14T10:30:00.000Z)
-  status: 'CONFIRMED' | 'CANCELLED';
+  start_time: string; // ISO String
+  end_time: string;   // ISO String
+  status: BookingStatus;
+  is_priority?: boolean;
+  rejection_reason?: string;
+  approved_by?: string;
+  approved_at?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -38,10 +46,12 @@ export interface CreateBookingDTO {
   date: string;       // YYYY-MM-DD
   start_time: string; // HH:mm
   end_time: string;   // HH:mm
+  is_priority?: boolean;
 }
 
 export interface ConflictCheckResult {
   hasConflict: boolean;
   conflictingBooking?: Booking;
   message?: string;
+  isPendingConflict?: boolean;
 }

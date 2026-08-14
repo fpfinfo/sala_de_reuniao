@@ -4,10 +4,11 @@ import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { bookingsService } from '../../services/bookingsService';
 import { validateBookingConflict } from '../../utils/conflictValidator';
 import { combineDateAndTime, generateTimeSlots } from '../../utils/dateUtils';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Users, MapPin } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Users, MapPin, Crown, ShieldAlert } from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onBookingSuccess,
 }) => {
   const { addToast } = useToast();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
 
   const [roomId, setRoomId] = useState<string>('');
   const [title, setTitle] = useState<string>('');
@@ -36,9 +40,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('10:00');
   const [description, setDescription] = useState<string>('');
+  const [isPriority, setIsPriority] = useState<boolean>(false);
   
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
+  const [isPendingConflict, setIsPendingConflict] = useState<boolean>(false);
   const [existingDayBookings, setExistingDayBookings] = useState<Booking[]>([]);
 
   const availableTimeSlots = generateTimeSlots(8, 19, 30);
@@ -52,14 +58,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       const start = initialStartTime || '09:00';
       setStartTime(start);
 
-      // Calcula término sugerido (+1 hora)
       const [h, m] = start.split(':').map(Number);
       const endHour = Math.min(h + 1, 19).toString().padStart(2, '0');
       setEndTime(`${endHour}:${m.toString().padStart(2, '0')}`);
 
       setTitle('');
       setDescription('');
+      setIsPriority(false);
       setConflictMessage(null);
+      setIsPendingConflict(false);
     }
   }, [isOpen, initialRoomId, initialStartTime, selectedDate, rooms]);
 
@@ -76,20 +83,30 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   useEffect(() => {
     if (!roomId || !date || !startTime || !endTime) {
       setConflictMessage(null);
+      setIsPendingConflict(false);
       return;
     }
 
     const startIso = combineDateAndTime(date, startTime);
     const endIso = combineDateAndTime(date, endTime);
 
-    const result = validateBookingConflict(roomId, startIso, endIso, existingDayBookings);
+    const result = validateBookingConflict(
+      roomId,
+      startIso,
+      endIso,
+      existingDayBookings,
+      undefined,
+      isPriority
+    );
 
     if (result.hasConflict) {
       setConflictMessage(result.message || 'Horário conflitante com outra reunião.');
+      setIsPendingConflict(!!result.isPendingConflict);
     } else {
       setConflictMessage(null);
+      setIsPendingConflict(false);
     }
-  }, [roomId, date, startTime, endTime, existingDayBookings]);
+  }, [roomId, date, startTime, endTime, existingDayBookings, isPriority]);
 
   const selectedRoom = rooms.find((r) => r.id === roomId);
 
@@ -105,7 +122,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
 
-    if (conflictMessage) {
+    if (conflictMessage && (!isPriority || !isPendingConflict)) {
       addToast({
         type: 'error',
         title: 'Conflito detectado',
@@ -124,15 +141,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         date,
         start_time: startTime,
         end_time: endTime,
+        is_priority: isPriority,
       };
 
       await bookingsService.createBooking(dto);
 
-      addToast({
-        type: 'success',
-        title: 'Reunião Agendada!',
-        message: `Agendamento confirmado para ${selectedRoom?.name} às ${startTime}.`,
-      });
+      if (isAdmin) {
+        addToast({
+          type: 'success',
+          title: isPriority ? 'Reserva Prioritária Confirmada!' : 'Reserva Confirmada!',
+          message: `Agendamento cadastrado com sucesso para ${selectedRoom?.name}.`,
+        });
+      } else {
+        addToast({
+          type: 'info',
+          title: 'Solicitação Enviada!',
+          message: 'Seu agendamento está pendente de aprovação pelo Administrador da SEPLAN.',
+          duration: 6000,
+        });
+      }
 
       onBookingSuccess();
       onClose();
@@ -156,10 +183,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Aviso de Perfil */}
+        {!isAdmin && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+            <Clock className="w-4 h-4 text-[#002B5C] flex-shrink-0 mt-0.5" />
+            <p>
+              <strong>Atenção:</strong> Sua reserva será enviada com status <strong>Pendente de Aprovação</strong> para que a administração da SEPLAN valide a disponibilidade de pauta e prioridade do Gabinete.
+            </p>
+          </div>
+        )}
+
         {/* Título da Reunião */}
         <Input
           label="Título da Reunião / Pauta *"
-          placeholder="Ex: Reunião de Planejamento Estratégico 2026"
+          placeholder="Ex: Alinhamento Estratégico SEPLAN"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -190,7 +227,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 font-semibold text-slate-700">
                 <Users className="w-3.5 h-3.5 text-[#002B5C]" />
-                Até {selectedRoom.capacity} pessoas
+                Capacidade: {selectedRoom.capacity} pessoas
               </span>
               <span className="flex items-center gap-1 font-medium text-slate-500">
                 <MapPin className="w-3.5 h-3.5 text-[#C59B27]" />
@@ -254,20 +291,51 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           </div>
         </div>
 
-        {/* Alerta de Validação de Conflito em Tempo Real */}
-        {conflictMessage ? (
+        {/* Opção de Reserva Prioritária do Gabinete / Secretário (Exclusivo Admin) */}
+        {isAdmin && (
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Crown className="w-4 h-4 text-[#C59B27] flex-shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-amber-950 block">
+                  Reserva Prioritária do Gabinete / Secretário
+                </span>
+                <span className="text-[11px] text-amber-800">
+                  Garante confirmação imediata e sobrepõe solicitações pendentes no horário.
+                </span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              id="priority-checkbox"
+              checked={isPriority}
+              onChange={(e) => setIsPriority(e.target.checked)}
+              className="w-4 h-4 rounded text-[#C59B27] focus:ring-[#C59B27] cursor-pointer"
+            />
+          </div>
+        )}
+
+        {/* Alertas de Conflito */}
+        {conflictMessage && (!isPriority || !isPendingConflict) ? (
           <div className="p-3 rounded-lg bg-red-50 border border-tjpa-red text-xs text-tjpa-red flex items-start gap-2 animate-shake">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span className="font-medium">{conflictMessage}</span>
           </div>
+        ) : isPriority && isPendingConflict ? (
+          <div className="p-3 rounded-lg bg-amber-100 border border-amber-400 text-xs text-amber-900 flex items-start gap-2">
+            <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#C59B27]" />
+            <span>
+              <strong>Atenção:</strong> A reserva prioritária do Secretário irá cancelar automaticamente a solicitação pendente existente neste horário.
+            </span>
+          </div>
         ) : (
           <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>Horário disponível para reserva!</span>
+            <span>Horário livre para agendamento!</span>
           </div>
         )}
 
-        {/* Descrição / Observações */}
+        {/* Descrição */}
         <div className="flex flex-col gap-1.5 text-left">
           <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
             Descrição / Participantes (Opcional)
@@ -276,7 +344,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ex: Pauta da reunião, participantes externos ou equipamentos necessários."
+            placeholder="Ex: Pauta da reunião, participantes convidados ou equipamentos."
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#002B5C]/20 focus:border-[#002B5C] resize-none"
           />
         </div>
@@ -290,10 +358,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             type="submit"
             variant="primary"
             isLoading={isLoading}
-            disabled={!!conflictMessage}
+            disabled={!!conflictMessage && (!isPriority || !isPendingConflict)}
             className="bg-[#002B5C] hover:bg-[#001E42] font-bold"
           >
-            Confirmar Reserva
+            {isAdmin ? 'Confirmar Agendamento' : 'Enviar Solicitação'}
           </Button>
         </div>
       </form>

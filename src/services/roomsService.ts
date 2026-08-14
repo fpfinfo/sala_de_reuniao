@@ -1,12 +1,12 @@
 import { Room } from '../types';
 import { ApiClient } from './api';
 
-// As 3 salas fixas da SEPLAN
+// As 3 salas fixas da SEPLAN com as capacidades oficiais atualizadas
 export const SEPLAN_ROOMS: Room[] = [
   {
     id: 'room-seplan-01',
     name: 'Sala de Reunião 1 (CODAR)',
-    capacity: 12,
+    capacity: 10,
     location: 'SEPLAN - Ala CODAR (Prédio Sede)',
     description: 'Sala de reuniões da Coordenadoria de Arrecadação (CODAR) equipada com TV 65" 4K para videoconferências e quadro branco.',
     color: '#002B5C', // Azul Marinho TJPA
@@ -15,16 +15,16 @@ export const SEPLAN_ROOMS: Room[] = [
   {
     id: 'room-seplan-02',
     name: 'Sala de Reunião 2 (SEPLAN)',
-    capacity: 8,
+    capacity: 15,
     location: 'SEPLAN - Gabinete / Planejamento',
-    description: 'Sala central da Secretaria de Planejamento, Coordenação e Finanças para alinhamentos estratégicos e técnicos.',
+    description: 'Sala central da Secretaria de Planejamento, Coordenação e Finanças para alinhamentos estratégicos com o Secretário Geral e equipes.',
     color: '#059669', // Esmeralda / Técnico
-    equipment: ['Smart TV 55"', 'Mesa Redonda', 'Pontos de Rede Gigabit', 'Quadro Magnético'],
+    equipment: ['Smart TV 55"', 'Mesa Redonda e Cadeiras Executivas', 'Pontos de Rede Gigabit', 'Quadro Magnético'],
   },
   {
     id: 'room-seplan-03',
     name: 'Sala de Reunião 3 (COFIN)',
-    capacity: 16,
+    capacity: 15,
     location: 'SEPLAN - Ala COFIN (Finanças)',
     description: 'Espaço da Coordenadoria Financeira (COFIN) com layout amplo, projetor de alta definição e sistema integrado de áudio.',
     color: '#C59B27', // Dourado Ouro TJPA

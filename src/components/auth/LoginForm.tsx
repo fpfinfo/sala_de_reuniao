@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Building2, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Crown, User as UserIcon } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
@@ -29,7 +29,7 @@ export const LoginForm: React.FC = () => {
       addToast({
         type: 'success',
         title: 'Autenticado com Sucesso',
-        message: 'Bem-vindo ao Sistema de Gestão de Salas da SEPLAN.',
+        message: `Bem-vindo ao Sistema de Salas da SEPLAN.`,
       });
     } catch (err: any) {
       addToast({
@@ -40,6 +40,11 @@ export const LoginForm: React.FC = () => {
     }
   };
 
+  const handleQuickLogin = (quickEmail: string) => {
+    setEmail(quickEmail);
+    login(quickEmail, '123456');
+  };
+
   return (
     <div className="min-h-screen bg-[#002B5C] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       {/* Elementos Decorativos de Fundo */}
@@ -48,25 +53,22 @@ export const LoginForm: React.FC = () => {
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10">
         {/* Cabeçalho do Card */}
-        <div className="bg-[#F1F3F6] p-8 text-center border-b border-slate-200">
+        <div className="bg-[#F1F3F6] p-6 text-center border-b border-slate-200">
           <img
             src="https://www.tjpa.jus.br/PortalExterno/hotsite/jurisprudencia/img/logo-oficial-tjpa.png"
             alt="Brasão TJPA"
-            className="h-16 w-auto object-contain mx-auto mb-4"
+            className="h-16 w-auto object-contain mx-auto mb-3"
           />
-          <h2 className="text-xl font-black text-[#002B5C] tracking-tight uppercase">
+          <h2 className="text-lg font-black text-[#002B5C] tracking-tight uppercase">
             Tribunal de Justiça do Pará
           </h2>
           <p className="text-xs font-bold text-[#C59B27] uppercase tracking-wider mt-0.5">
-            SEPLAN — Salas de Reunião
-          </p>
-          <p className="text-xs text-slate-500 mt-2">
-            Acesse com sua conta corporativa para gerenciar e reservar salas.
+            SEPLAN — Agendamento de Salas
           </p>
         </div>
 
         {/* Formulário de Login */}
-        <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
           <Input
             label="E-mail Institucional"
             type="email"
@@ -87,29 +89,47 @@ export const LoginForm: React.FC = () => {
             required
           />
 
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="rounded text-[#002B5C] focus:ring-[#002B5C]"
-              />
-              <span>Lembrar meu acesso</span>
-            </label>
-            <span className="text-[#002B5C] font-semibold hover:underline cursor-pointer">
-              Recuperar senha
-            </span>
-          </div>
-
           <Button
             type="submit"
             variant="primary"
             size="lg"
             isLoading={isLoading}
-            className="w-full bg-[#002B5C] hover:bg-[#001E42] font-bold text-sm shadow-md mt-2"
+            className="w-full bg-[#002B5C] hover:bg-[#001E42] font-bold text-sm shadow-md mt-1"
           >
             Entrar no Sistema
           </Button>
+
+          {/* Acesso Rápido para Demonstração dos Perfis */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <span className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-wide">
+              Acesso Rápido para Testes:
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('fabio.freitas@tjpa.jus.br')}
+                className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left transition-colors flex items-center gap-2"
+              >
+                <Crown className="w-4 h-4 text-[#C59B27] flex-shrink-0" />
+                <div className="flex flex-col truncate">
+                  <span className="text-[11px] font-bold text-amber-950 truncate">Fabio Freitas</span>
+                  <span className="text-[9px] text-amber-700 font-semibold">Master Admin</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('servidor.financas@tjpa.jus.br')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors flex items-center gap-2"
+              >
+                <UserIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                <div className="flex flex-col truncate">
+                  <span className="text-[11px] font-bold text-slate-800 truncate">Servidor Padrão</span>
+                  <span className="text-[9px] text-slate-500 font-semibold">Usuário (Pendente)</span>
+                </div>
+              </button>
+            </div>
+          </div>
 
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-2 border-t border-slate-100">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -118,7 +138,7 @@ export const LoginForm: React.FC = () => {
         </form>
       </div>
 
-      <p className="text-xs text-slate-300 mt-6 font-medium">
+      <p className="text-xs text-slate-300 mt-4 font-medium">
         © 2026 Tribunal de Justiça do Estado do Pará • SEPLAN
       </p>
     </div>

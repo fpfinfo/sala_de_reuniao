@@ -10,22 +10,25 @@ import { Shell } from './components/layout/Shell';
 import { RoomFilterBar } from './components/dashboard/RoomFilterBar';
 import { DailyTimelineGrid } from './components/dashboard/DailyTimelineGrid';
 import { MyBookingsList } from './components/bookings/MyBookingsList';
+import { PendingApprovalsList } from './components/admin/PendingApprovalsList';
+import { UserManagementModal } from './components/admin/UserManagementModal';
 import { BookingModal } from './components/bookings/BookingModal';
 import { CancelConfirmModal } from './components/bookings/CancelConfirmModal';
 import { LoginForm } from './components/auth/LoginForm';
 import { ToastContainer } from './components/ui/ToastContainer';
 
 export const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { addToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'timeline' | 'my-bookings'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'my-bookings' | 'pending-approvals'>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [selectedRoomId, setSelectedRoomId] = useState<string | 'ALL'>('ALL');
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [dailyBookings, setDailyBookings] = useState<Booking[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
+  const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
 
   // Modais
@@ -37,6 +40,10 @@ export const AppContent: React.FC = () => {
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState<boolean>(false);
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
+
   // Carrega salas da SEPLAN
   useEffect(() => {
     if (isAuthenticated) {
@@ -46,17 +53,19 @@ export const AppContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Carrega agendamentos da data selecionada e agendamentos do usuário
+  // Carrega agendamentos
   const loadBookings = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingData(true);
     try {
-      const [dayData, myData] = await Promise.all([
+      const [dayData, myData, pendingData] = await Promise.all([
         bookingsService.getBookingsByDate(selectedDate),
         bookingsService.getMyBookings(),
+        bookingsService.getPendingBookings(),
       ]);
       setDailyBookings(dayData);
       setMyBookings(myData);
+      setPendingBookings(pendingData);
     } catch (err: any) {
       console.error('Erro ao carregar agendamentos:', err);
     } finally {
@@ -68,7 +77,44 @@ export const AppContent: React.FC = () => {
     loadBookings();
   }, [loadBookings]);
 
-  // Abertura de modal de agendamento rápido
+  // Ações de Administrador
+  const handleApproveBooking = async (bookingId: string) => {
+    try {
+      await bookingsService.approveBooking(bookingId);
+      addToast({
+        type: 'success',
+        title: 'Agendamento Aprovado!',
+        message: 'A reserva foi confirmada e o horário está garantido na grade.',
+      });
+      loadBookings();
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Erro ao aprovar',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleRejectBooking = async (bookingId: string, reason: string) => {
+    try {
+      await bookingsService.rejectBooking(bookingId, reason);
+      addToast({
+        type: 'info',
+        title: 'Solicitação Recusada',
+        message: 'A solicitação foi rejeitada e a justificativa foi registrada.',
+      });
+      loadBookings();
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Erro ao recusar',
+        message: err.message,
+      });
+    }
+  };
+
+  // Agendamento Rápido
   const handleQuickBooking = (roomId: string, timeSlot: string) => {
     setBookingModalInitialRoom(roomId);
     setBookingModalInitialStart(timeSlot);
@@ -136,6 +182,8 @@ export const AppContent: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onNewBookingClick={handleOpenNewBooking}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        pendingCount={pendingBookings.length}
       />
 
       <Shell>
@@ -164,15 +212,27 @@ export const AppContent: React.FC = () => {
                 selectedDate={selectedDate}
                 onQuickBooking={handleQuickBooking}
                 onBookingClick={(booking) => {
+                  const statusDesc =
+                    booking.status === 'PENDING'
+                      ? 'Pendente de Aprovação pelo Administrador'
+                      : 'Confirmado';
                   addToast({
-                    type: 'info',
+                    type: booking.status === 'PENDING' ? 'warning' : 'info',
                     title: booking.title,
-                    message: `Reservado por ${booking.user_name} (${booking.user_email}).`,
+                    message: `${statusDesc} • Solicitante: ${booking.user_name}`,
                   });
                 }}
               />
             )}
           </div>
+        ) : activeTab === 'pending-approvals' && isAdmin ? (
+          <PendingApprovalsList
+            pendingBookings={pendingBookings}
+            rooms={rooms}
+            onApprove={handleApproveBooking}
+            onReject={handleRejectBooking}
+            onNewBookingClick={handleOpenNewBooking}
+          />
         ) : (
           <MyBookingsList
             bookings={myBookings}
@@ -205,6 +265,12 @@ export const AppContent: React.FC = () => {
         room={rooms.find((r) => r.id === bookingToCancel?.room_id)}
         onConfirm={handleConfirmCancel}
         isLoading={isCancelling}
+      />
+
+      {/* Modal de Gestão de Usuários (Master Admin) */}
+      <UserManagementModal
+        isOpen={isUserManagementOpen}
+        onClose={() => setIsUserManagementOpen(false)}
       />
 
       <ToastContainer />

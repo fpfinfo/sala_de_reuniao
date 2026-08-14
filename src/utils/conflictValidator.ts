@@ -27,7 +27,8 @@ export const validateBookingConflict = (
   startTimeIso: string,
   endTimeIso: string,
   existingBookings: Booking[],
-  ignoreBookingId?: string
+  ignoreBookingId?: string,
+  isPriorityBooking: boolean = false
 ): ConflictCheckResult => {
   const newStart = new Date(startTimeIso).getTime();
   const newEnd = new Date(endTimeIso).getTime();
@@ -39,12 +40,15 @@ export const validateBookingConflict = (
     };
   }
 
-  // Filtra apenas agendamentos da mesma sala e confirmados
-  const roomBookings = existingBookings.filter(
-    (b) => b.room_id === roomId && b.status === 'CONFIRMED' && b.id !== ignoreBookingId
+  // Considera apenas agendamentos da mesma sala que estejam CONFIRMED ou PENDING
+  const activeBookings = existingBookings.filter(
+    (b) =>
+      b.room_id === roomId &&
+      (b.status === 'CONFIRMED' || b.status === 'PENDING') &&
+      b.id !== ignoreBookingId
   );
 
-  for (const booking of roomBookings) {
+  for (const booking of activeBookings) {
     const isOverlapping = checkIntervalOverlap(
       startTimeIso,
       endTimeIso,
@@ -55,10 +59,19 @@ export const validateBookingConflict = (
     if (isOverlapping) {
       const formattedStart = formatTimeBr(booking.start_time);
       const formattedEnd = formatTimeBr(booking.end_time);
+
+      // Se quem está agendando for Admin com prioridade e a colisão for com PENDING, não bloqueia
+      if (isPriorityBooking && booking.status === 'PENDING') {
+        continue;
+      }
+
+      const statusText = booking.status === 'PENDING' ? '(Pendente de Aprovação)' : '(Confirmado)';
+
       return {
         hasConflict: true,
         conflictingBooking: booking,
-        message: `Conflito de horário! A sala já está reservada por "${booking.user_name}" das ${formattedStart} às ${formattedEnd} ("${booking.title}").`,
+        isPendingConflict: booking.status === 'PENDING',
+        message: `Conflito de horário! A sala já possui reserva ${statusText} por "${booking.user_name}" das ${formattedStart} às ${formattedEnd} ("${booking.title}").`,
       };
     }
   }

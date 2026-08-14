@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Booking, Room } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Clock, Calendar, Trash2, Search } from 'lucide-react';
+import { Clock, Calendar, Trash2, Search, Crown, AlertTriangle } from 'lucide-react';
 import { formatDateBr, formatTimeBr } from '../../utils/dateUtils';
 
 interface MyBookingsListProps {
@@ -19,7 +19,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
   onNewBookingClick,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED'>('ALL');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'CONFIRMED' | 'PENDING' | 'REJECTED' | 'CANCELLED'>('ALL');
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
@@ -31,6 +31,35 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
     return matchesSearch && matchesStatus;
   });
 
+  const getStatusBadge = (booking: Booking) => {
+    switch (booking.status) {
+      case 'CONFIRMED':
+        return (
+          <Badge variant="green" size="sm" dot>
+            Confirmado
+          </Badge>
+        );
+      case 'PENDING':
+        return (
+          <Badge variant="gold" size="sm" dot>
+            Pendente de Aprovação
+          </Badge>
+        );
+      case 'REJECTED':
+        return (
+          <Badge variant="red" size="sm" dot>
+            Recusado pelo Admin
+          </Badge>
+        );
+      case 'CANCELLED':
+        return (
+          <Badge variant="gray" size="sm" dot>
+            Cancelado
+          </Badge>
+        );
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Barra de Filtros e Busca */}
@@ -40,7 +69,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Pesquisar por título ou pauta..."
+            placeholder="Pesquisar minhas reuniões..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#002B5C]"
@@ -48,7 +77,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
         </div>
 
         {/* Filtro de Status */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => setFilterStatus('ALL')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -58,6 +87,16 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
             }`}
           >
             Todos ({bookings.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('PENDING')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filterStatus === 'PENDING'
+                ? 'bg-[#C59B27] text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Pendentes
           </button>
           <button
             onClick={() => setFilterStatus('CONFIRMED')}
@@ -70,14 +109,14 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
             Confirmados
           </button>
           <button
-            onClick={() => setFilterStatus('CANCELLED')}
+            onClick={() => setFilterStatus('REJECTED')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              filterStatus === 'CANCELLED'
+              filterStatus === 'REJECTED'
                 ? 'bg-tjpa-red text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            Cancelados
+            Recusados
           </button>
         </div>
       </div>
@@ -88,7 +127,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
           <Calendar className="w-12 h-12 text-slate-300 mb-3" />
           <h4 className="text-base font-bold text-slate-700">Nenhum agendamento encontrado</h4>
           <p className="text-xs text-slate-500 max-w-sm mt-1 mb-6">
-            Você ainda não possui reuniões agendadas com os critérios selecionados.
+            Você não possui agendamentos com os critérios selecionados.
           </p>
           <Button variant="gold" onClick={onNewBookingClick} className="font-bold">
             Fazer Novo Agendamento
@@ -99,32 +138,40 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
           {filteredBookings.map((booking) => {
             const room = rooms.find((r) => r.id === booking.room_id);
             const isCancelled = booking.status === 'CANCELLED';
+            const isRejected = booking.status === 'REJECTED';
+            const isPending = booking.status === 'PENDING';
 
             return (
               <div
                 key={booking.id}
                 className={`bg-white rounded-xl border p-5 shadow-sm transition-all flex flex-col justify-between ${
-                  isCancelled ? 'border-slate-200 opacity-60' : 'border-slate-300 hover:shadow-md'
+                  isPending
+                    ? 'border-amber-300 bg-amber-50/20'
+                    : isRejected
+                    ? 'border-red-200 bg-red-50/20'
+                    : isCancelled
+                    ? 'border-slate-200 opacity-60'
+                    : 'border-slate-300 hover:shadow-md'
                 }`}
                 style={{
                   borderLeftWidth: '5px',
-                  borderLeftColor: isCancelled ? '#94A3B8' : room?.color || '#002B5C',
+                  borderLeftColor: isPending ? '#D97706' : isRejected ? '#ED1C24' : isCancelled ? '#94A3B8' : room?.color || '#002B5C',
                 }}
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h4 className="text-sm font-bold text-slate-900 line-clamp-2">
-                      {booking.title}
-                    </h4>
-                    {isCancelled ? (
-                      <Badge variant="red" size="sm" dot>
-                        Cancelado
-                      </Badge>
-                    ) : (
-                      <Badge variant="green" size="sm" dot>
-                        Confirmado
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {booking.is_priority && (
+                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-1.5 py-0.2 rounded shadow-xs">
+                          <Crown className="w-3 h-3 text-[#C59B27]" />
+                          Gabinete
+                        </span>
+                      )}
+                      <h4 className="text-sm font-bold text-slate-900 line-clamp-2">
+                        {booking.title}
+                      </h4>
+                    </div>
+                    {getStatusBadge(booking)}
                   </div>
 
                   {/* Informações da Sala */}
@@ -137,6 +184,17 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
                     <span className="text-slate-400 font-normal">• {room?.location}</span>
                   </div>
 
+                  {/* Justificativa de Recusa */}
+                  {isRejected && booking.rejection_reason && (
+                    <div className="bg-red-50 border border-red-200 p-2.5 rounded-lg text-xs text-red-900 mb-3 flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-tjpa-red flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block">Justificativa da Administração:</strong>
+                        <span>{booking.rejection_reason}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Descrição */}
                   {booking.description && (
                     <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-4">
@@ -145,7 +203,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
                   )}
                 </div>
 
-                {/* Rodapé do Card com Data, Horário e Ações */}
+                {/* Rodapé do Card */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between mt-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-slate-600">
                     <span className="flex items-center gap-1 font-medium">
@@ -158,7 +216,7 @@ export const MyBookingsList: React.FC<MyBookingsListProps> = ({
                     </span>
                   </div>
 
-                  {!isCancelled && (
+                  {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
                     <Button
                       variant="ghost"
                       size="sm"

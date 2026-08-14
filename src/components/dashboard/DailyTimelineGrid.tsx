@@ -81,7 +81,7 @@ export const DailyTimelineGrid: React.FC<DailyTimelineGridProps> = ({
               {displayedRooms.map((room) => {
                 // Filtra agendamentos desta sala que coincidem com este bloco de horário
                 const matchingBookings = bookings.filter((b) => {
-                  if (b.room_id !== room.id || b.status !== 'CONFIRMED') return false;
+                  if (b.room_id !== room.id || (b.status !== 'CONFIRMED' && b.status !== 'PENDING')) return false;
 
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
